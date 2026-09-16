@@ -4,7 +4,7 @@ from datetime import datetime
 
 from scripts.dbcontrol import DBControl, Task, TaskType, NotFoundException
 
-from scripts.models import TaskSchema, TaskTypeSchema
+from scripts.models import TaskSchema, TaskSchemaIn, TaskTypeSchema, TaskTypeSchemaIn
 
 from sqlalchemy.exc import IntegrityError
 
@@ -13,44 +13,38 @@ from sqlalchemy.exc import IntegrityError
 def db():
     db = DBControl("sqlite:///:memory:")
     
-    type = TaskTypeSchema(
-            id=1,
+    type = TaskTypeSchemaIn(
             name="leisure",
             desc="relaxing behaviour, something that makes you chill"
         )
     db.add_type(type)
-    type = TaskTypeSchema(
-            id=2,
+    type = TaskTypeSchemaIn(
             name="work",
             desc="work-related tasks"
         )
     db.add_type(type)
-    type = TaskTypeSchema(
-            id=3,
+    type = TaskTypeSchemaIn(
             name="chores",
             desc="tasks that you have to do for survival"
         )
     db.add_type(type)
     
     
-    task = TaskSchema(
-            id=1,
+    task = TaskSchemaIn(
             name="meet friends at Arby's",
             deadline=datetime.strptime("01.01.2001 00:00:00","%d.%m.%Y %H:%M:%S"),
             desc="",
             tasktype_id=1
         )
     db.add_task(task)
-    task = TaskSchema(
-            id=2,
+    task = TaskSchemaIn(
             name="vacuum clean the vacuum cleaner",
             deadline=datetime(2002, 2, 2),
             desc="vacuum cleaner needs to be vacuum cleaned, vacuum clean the living sheet out of the vacuum cleaner",
             tasktype_id=3
         )
     db.add_task(task)
-    task = TaskSchema(
-            id=3,
+    task = TaskSchemaIn(
             name="add oil to oiltaker",
             deadline=datetime(2003, 3, 3),
             desc="oiltaker wants oil, give it to him, it's your job and no one else's",
@@ -64,13 +58,22 @@ def db():
 
 class TestTaskType():
 # TaskType tests    
+    def test_add_type_autoincrement_succeeds(self, db):
+        type = TaskTypeSchemaIn(
+            name="learning",
+            desc="practicing something to become better"
+        )        
+        res = db.add_type(type)    
+        assert type.model_dump() == res.model_dump(exclude={"id"})       
+    
     def test_add_type_succeeds(self, db):
         type = TaskTypeSchema(
             id=4,
             name="learning",
             desc="practicing something to become better"
         )
-        assert db.add_type(type) == type  
+        res = db.add_type(type)    
+        assert type == res
     
     def test_add_type_unique_rows_fails(self, db):        
         type = TaskTypeSchema(
@@ -98,8 +101,9 @@ class TestTaskType():
             id=1,
             name="pleasure",
             desc="relaxing behaviour, something that makes you chill"
-        )        
-        assert db.update_type(type) == type
+        )
+        res = db.update_type(type)     
+        assert type == res
         
     def test_update_nonexistent_type_fails(self, db):
         type = TaskTypeSchema(
@@ -111,7 +115,9 @@ class TestTaskType():
             db.update_type(type)
             
     def test_delete_type_succeeds(self, db):
-        assert db.delete_type(id=1) is None
+        id = 1
+        deleted_row = db.delete_type(id)
+        assert deleted_row.id == id
         
     def test_delete_nonexistent_type_fails(self, db):
         with pytest.raises(NotFoundException):
@@ -127,6 +133,16 @@ class TestTaskType():
             
 class TestTask():
     # Task tests
+    def test_add_task_autoincrement_succeeds(self, db):
+        task = TaskSchemaIn(
+                name="watch That New Hot Movie",
+                deadline=datetime(2004, 4, 4),
+                desc="Yes, that's an actual name of the movie",
+                tasktype_id=1
+            )       
+        res = db.add_task(task)    
+        assert task.model_dump() == res.model_dump(exclude={"id"})   
+    
     def test_add_task_succeeds(self, db):
         task = TaskSchema(
                 id=4,
@@ -185,7 +201,9 @@ class TestTask():
             db.update_task(task)
             
     def test_delete_task_succeeds(self, db):
-        assert db.delete_task(id=1) is None
+        id = 1
+        deleted_row = db.delete_task(id)
+        assert deleted_row.id == id
         
     def test_delete_nonexistent_task_fails(self, db):
         with pytest.raises(NotFoundException):

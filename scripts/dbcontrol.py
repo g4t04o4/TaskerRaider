@@ -1,12 +1,12 @@
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import datetime
 
 from sqlalchemy import String, Date, ForeignKey
 from sqlalchemy import create_engine, select, delete
 from sqlalchemy.orm import DeclarativeBase, Mapped
 from sqlalchemy.orm import mapped_column, relationship, Session
 
-from scripts.models import TaskSchema, TaskTypeSchema
+from scripts.models import TaskSchema, TaskSchemaIn, TaskTypeSchema, TaskTypeSchemaIn
 
 class NotFoundException(Exception):
     pass   
@@ -52,17 +52,19 @@ class DBControl:
             
 
     # CREATE                        
-    def add_type(self, tasktype: TaskTypeSchema) -> TaskTypeSchema:
+    def add_type(self, tasktype: TaskTypeSchemaIn | TaskTypeSchema) -> TaskTypeSchema:
         with Session(self._engine) as session:
-            session.add(TaskType(**tasktype.model_dump()))
+            t = TaskType(**tasktype.model_dump())
+            session.add(t)
             session.commit()
-            return TaskTypeSchema.model_validate(session.get(TaskType, tasktype.id))
+            return TaskTypeSchema.model_validate(session.get(TaskType, t.id))
     
-    def add_task(self, task: TaskSchema) -> TaskSchema:
+    def add_task(self, task: TaskSchemaIn | TaskTypeSchema) -> TaskSchema:
         with Session(self._engine) as session:
-            session.add(Task(**task.model_dump()))
+            t = Task(**task.model_dump())
+            session.add(t)
             session.commit()
-            return TaskSchema.model_validate(session.get(Task, task.id))
+            return TaskSchema.model_validate(session.get(Task, t.id))
     
     # READ             
     def get_type(self, id) -> TaskTypeSchema:
@@ -123,21 +125,25 @@ class DBControl:
             return TaskSchema.model_validate(old_t)
     
     # DELETE    
-    def delete_type(self, id) -> None:
+    def delete_type(self, id) -> TaskTypeSchema | None:
         with Session(self._engine) as session:            
-            row = session.get(TaskType, id)
+            row = session.get(TaskType, id)            
             if row is None:
-                raise NotFoundException            
-            session.delete(row)
-            session.commit()                
-
-    def delete_task(self, id) -> None:
-        with Session(self._engine) as session:            
-            row = session.get(Task, id)
-            if row is None:
-                raise NotFoundException             
+                raise NotFoundException
+            deleted_row = TaskTypeSchema.model_validate(row)         
             session.delete(row)
             session.commit()
+            return deleted_row               
+
+    def delete_task(self, id) -> TaskSchema | None:
+        with Session(self._engine) as session:            
+            row = session.get(Task, id)            
+            if row is None:
+                raise NotFoundException
+            deleted_row = TaskSchema.model_validate(row)             
+            session.delete(row)
+            session.commit()
+            return deleted_row 
     
     def clear_all_types(self) -> None:
         with Session(self._engine) as session:            

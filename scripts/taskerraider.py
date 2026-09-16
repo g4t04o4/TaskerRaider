@@ -1,30 +1,26 @@
-from typing import List, Type
+from typing import List, Type, Annotated
 from enum import Enum
 
-from scripts.dbcontrol import DBControl
+from scripts.dbcontrol import DBControl, NotFoundException
 
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, Query, HTTPException, Path
 
-from scripts.models import TaskSchema, TaskTypeSchema, BaseModel
+from scripts.models import TaskSchemaIn, TaskSchema, TaskTypeSchemaIn, TaskTypeSchema
 
 """
 TODO:
 html/css ui
 tests
 universal server config
-POST variables through post body
-validate data
 return adequate status codes
 health check route
 internationalization (different languages)
 separate data structures for requests/decode_responses
 docker container for a full app
 """
-# TODO: сделать выбор дедлайна на календарике и выбор типа задачи из выпадающего списка
-# TODO: сделать операцию изменения уже существующей записи
 # TODO: сделать более красивый и структурированный возврат bulk методов (json)
-# TODO: при удалении уже удалённой строки не кидает ошибку
 # TODO: нормальные http статус коды для результатов реквестов
+# TODO: сделать нормальную асинхронщину
 """
 Маленькое FastAPI приложение для менеджмента задач
 
@@ -57,52 +53,111 @@ class TaskerRaider:
         
         self._register_routes()
         
-    def _register_routes(self):        
-             
+    def _register_routes(self):  
+        
+        # TODO: need to catch exceptions instead of return "error"    
+        
+        # CREATE     
         @self.app.post("/type")    
-        def add_type(tasktype: TaskTypeSchema) -> dict[str, str]:
+        def add_type(tasktype: TaskTypeSchemaIn | TaskTypeSchema) -> dict[str, TaskTypeSchema | None]:
             res = self.db_control.add_type(tasktype)
             if res:
-                return({"result": f"{res}"})
+                return({"success": res})
             else:
-                return({"error": "could not add type"})
+                return({"error": None})
             
-        @self.app.get("/type")
-        def get_type(id: int) -> dict[str, str]:
-            res = self.db_control.get_type(id)
+        @self.app.post("/task")    
+        def add_task(task: TaskSchemaIn | TaskSchema) -> dict[str, TaskSchema | None]:
+            res = self.db_control.add_task(task)
             if res:
-                return({"result": f"{res}"})
+                return({"success": res})
             else:
-                return({"error": "could not get type"})
-            
-        @self.app.delete("/type")
-        def delete_type(id: int) -> dict[str, str]:
-            res = self.db_control.delete_type(id)
+                return({"error": None})
+        
+        
+        # READ   
+        @self.app.get("/type/{type_id}")
+        def get_type(type_id: Annotated[int, Path(ge=0)]) -> dict[str, TaskTypeSchema | None]:
+            res = self.db_control.get_type(type_id)
             if res:
-                return({"result": f"{res}"})
+                return({"success": res})
             else:
-                return({"error": "could not delete type"})
+                return({"error": None})
             
-        @self.app.post("/types")
-        def bulk_add_types(types: List[TaskTypeSchema]) -> dict[str, str]:
-            res = self.db_control.bulk_add_types(types)
+        @self.app.get("/task/{task_id}")
+        def get_task(task_id: Annotated[int, Path(ge=0)]) -> dict[str, TaskSchema | None]:
+            res = self.db_control.get_task(task_id)
             if res:
-                return({"result": f"{res}"})
+                return({"success": res})
             else:
-                return({"error": "could not add type"})
+                return({"error": None})
             
-        @self.app.get("/types")
-        def get_type_list() -> dict[str, str]:
+        @self.app.get("/type_list")
+        def get_type_list() -> dict[str, list[TaskTypeSchema] | None]:
             res = self.db_control.get_type_list()
             if res:
-                return({"result": f"{res}"})
+                return({"success": res})
             else:
-                return({"error": "could not get type"})
-            
-        @self.app.delete("/types")
-        def clear_all_types():
-            res = self.db_control.clear_all_types()
+                return({"error": None})
+        
+        @self.app.get("/task_list")
+        def get_task_list() -> dict[str, list[TaskSchema] | None]:
+            res = self.db_control.get_task_list()
             if res:
-                return({"result": f"{res}"})
+                return({"success": res})
             else:
-                return({"error": "could not delete type"})
+                return({"error": None})
+        
+        
+        # UPDATE    
+        @self.app.put("/type")
+        def update_type(tasktype: TaskTypeSchema) -> dict[str, TaskTypeSchema | None]:
+            res = self.db_control.update_type(tasktype)
+            if res:
+                return({"success": res})
+            else:
+                return({"error": None})
+            
+        @self.app.put("/task")
+        def update_task(task: TaskSchema) -> dict[str, TaskSchema | None]:
+            res = self.db_control.update_task(task)
+            if res:
+                return({"success": res})
+            else:
+                return({"error": None})
+        
+        
+        # DELETE    
+        @self.app.delete("/type/{type_id}")
+        def delete_type(type_id: Annotated[int, Path(ge=0)]) -> dict[str, TaskTypeSchema | None]:
+            res = self.db_control.delete_type(type_id)
+            if res:
+                return({"success": res})
+            else:
+                return({"error": None})  
+            
+        @self.app.delete("/task/{task_id}")
+        def delete_task(task_id: Annotated[int, Path(ge=0)]) -> dict[str, TaskSchema | None]:
+            res = self.db_control.delete_task(task_id)
+            if res:
+                return({"success": res})
+            else:
+                return({"error": None})
+            
+        @self.app.delete("/type_list")
+        def clear_all_types() -> str:
+            try:
+                self.db_control.clear_all_types()
+                return "success"
+            except NotFoundException as e:
+                print(f"error: {e}")
+                return "error"
+         
+        @self.app.delete("/task_list")
+        def clear_all_tasks() -> str:
+            try:
+                self.db_control.clear_all_tasks()
+                return "success"
+            except NotFoundException as e:
+                print(f"error: {e}")
+                return "error"       

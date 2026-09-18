@@ -50,26 +50,10 @@ class TaskType(Base):
 class DBControl:
     def __init__(self, filepath: str) -> None:
         self._db_filepath = filepath
-        self._engine = create_engine(self._db_filepath, echo=False, connect_args={"check_same_thread": False})       
-        self._session_local = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
+        self._engine = create_engine(self._db_filepath, echo=False, connect_args={"check_same_thread": False}) 
         
-        
-        
-        self.create_tables_from_metadata()
-    
-    def create_tables_from_metadata(self):
-        Base.metadata.create_all(self._engine)  
-        
-    def get_session(self):
-        with Session(self._engine) as session:
-            yield session    
-            
-        # session_dep = Annotated[Session, Depends(self.get_session)]    
-            
-            
-            
-            
-            
+        Base.metadata.create_all(self._engine)
+          
 
     # CREATE                        
     def add_type(self, tasktype: TaskTypeSchemaIn | TaskTypeSchema) -> TaskTypeSchema:
@@ -85,6 +69,7 @@ class DBControl:
             session.add(t)
             session.commit()
             return TaskSchema.model_validate(session.get(Task, t.id))
+    
     
     # READ             
     def get_type(self, id) -> TaskTypeSchema:
@@ -121,6 +106,7 @@ class DBControl:
                 raise NotFoundException
             return lst
     
+    
     # UPDATE
     def update_type(self, tasktype: TaskTypeSchema) -> TaskTypeSchema:
         with Session(self._engine) as session:
@@ -143,6 +129,7 @@ class DBControl:
             old_t.desc = t.desc
             old_t.tasktype_id = t.tasktype_id
             return TaskSchema.model_validate(old_t)
+    
     
     # DELETE    
     def delete_type(self, id) -> TaskTypeSchema:

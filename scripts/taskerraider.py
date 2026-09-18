@@ -1,5 +1,7 @@
 from typing import Annotated, Generator
 
+from contextlib import asynccontextmanager
+
 from scripts.dbcontrol import DBControl, NotFoundException, Base
 
 from fastapi import FastAPI, APIRouter, Path, Response, status, HTTPException, Depends
@@ -26,8 +28,9 @@ docker container for a full app
 # TODO: убрать ошибки из импортов
 # TODO: сделать нормальный return логов ошибок вместо return None (jsoncontent)
 # TODO: сделать exception handler для самых основных ошибок https://fastapi.tiangolo.com/tutorial/handling-errors/
-# TODO: update методы не работают
-
+# TODO: update методы багуют
+# TODO: сделать shared cache in memory sqlite database для тестов api
+# TODO: переделать dbcontrol модуль под session dependency вариант
 """
 Маленькое FastAPI приложение для менеджмента задач
 
@@ -45,7 +48,7 @@ docker container for a full app
     
 Задача содержит в себе название задачи, её краткое описание и дату/время, к которой она должна быть сделана (+тип задачи)
 """
- 
+
 
 class TaskerRaider:
     def __init__(self, db_filepath = "sqlite:///database.db") -> None:
@@ -53,26 +56,18 @@ class TaskerRaider:
         self.db_filepath = db_filepath
         self.db_control = DBControl(self.db_filepath)
         
-        self.db_control.create_tables_from_metadata()
-        
-        self.db_session = Annotated[Session, Depends(self.db_control.get_session)]
-        
         # Основное приложение FastAPI
         self.app = FastAPI(title="Tasker Raider")
         
-        self._register_routes() 
+        self._register_routes()
         
-    def _register_routes(self): 
-        
-        
-        # @self.app.middleware("http")
-        # def mwp():
-        #     pass
-             
+                    
+    def _register_routes(self):   
         
         @self.app.get("/healthcheck", status_code=status.HTTP_200_OK)
         def healthcheck() -> str:
             return "operational"
+        
         
         # CREATE     
         @self.app.post("/type", status_code=status.HTTP_201_CREATED)    

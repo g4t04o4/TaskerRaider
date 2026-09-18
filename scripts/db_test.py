@@ -9,7 +9,7 @@ from scripts.models import TaskSchema, TaskSchemaIn, TaskTypeSchema, TaskTypeSch
 from sqlalchemy.exc import IntegrityError
 
     
-@pytest.fixture
+@pytest.fixture(scope="function")
 def db():
     db = DBControl("sqlite:///:memory:")
     
@@ -54,9 +54,9 @@ def db():
     
     yield db
     db.clear_all_tasks()
-    db.clear_all_types()   
+    db.clear_all_types()  
 
-class TestTaskType():
+class TestTaskType:
 # TaskType tests    
     def test_add_type_autoincrement_succeeds(self, db):
         type = TaskTypeSchemaIn(
@@ -94,7 +94,18 @@ class TestTaskType():
         
     def test_get_nonexistent_type_fails(self, db):
         with pytest.raises(NotFoundException):
-            db.get_type(id=42)
+            db.get_type(id=42)            
+
+    def test_get_type_list_succeeds(self, db):
+        lst = db.get_type_list()
+        assert len(lst)
+        for t in lst:            
+            assert isinstance(t, TaskTypeSchema)
+            
+    def test_get_type_list_from_empty_fails(self, db):
+        db.clear_all_types()
+        with pytest.raises(NotFoundException):
+            db.get_type_list()        
         
     def test_update_type_succeeds(self, db):
         type = TaskTypeSchema(
@@ -131,7 +142,7 @@ class TestTaskType():
         with pytest.raises(NotFoundException):
             db.clear_all_types()
             
-class TestTask():
+class TestTask:
     # Task tests
     def test_add_task_autoincrement_succeeds(self, db):
         task = TaskSchemaIn(
@@ -178,6 +189,17 @@ class TestTask():
     def test_get_nonexistent_task_fails(self, db):
         with pytest.raises(NotFoundException):
             db.get_task(id=42)
+            
+    def test_get_task_list_succeeds(self, db):
+        lst = db.get_task_list()
+        assert len(lst)
+        for t in lst:            
+            assert isinstance(t, TaskSchema)
+            
+    def test_get_task_list_from_empty_fails(self, db):
+        db.clear_all_tasks()
+        with pytest.raises(NotFoundException):
+            db.get_task_list() 
             
     def test_update_task_succeeds(self, db):
         task = TaskSchema(

@@ -1,15 +1,22 @@
-from typing import List, Optional
+from typing import Annotated, Any, List, Mapping, Optional
 from datetime import datetime
 
+from annotated_doc import Doc
 from sqlalchemy import String, Date, ForeignKey
 from sqlalchemy import create_engine, select, delete
-from sqlalchemy.orm import DeclarativeBase, Mapped
+from sqlalchemy.orm import DeclarativeBase, Mapped, sessionmaker
 from sqlalchemy.orm import mapped_column, relationship, Session
 
-from scripts.models import TaskSchema, TaskSchemaIn, TaskTypeSchema, TaskTypeSchemaIn
+from fastapi import Depends, HTTPException
 
-class NotFoundException(Exception):
-    pass   
+from scripts.models import TaskSchema, TaskSchemaIn, TaskTypeSchema, TaskTypeSchemaIn
+  
+class NotFoundException(HTTPException):
+    def __init__(self, 
+                 status_code: int = 404, 
+                 detail: Any = None, 
+                 headers: Mapping[str, str] | None = None) -> None:
+        super().__init__(status_code, detail, headers)
     
 class Base(DeclarativeBase):
     pass
@@ -39,16 +46,29 @@ class TaskType(Base):
     
     def __repr__(self) -> str:
         return f"TaskType(id={self.id!r}, name={self.name!r}, desc={self.desc!r})"
-        
-
-# TODO: возможность сохранять дедлайн как дату без точного времени
 
 class DBControl:
     def __init__(self, filepath: str) -> None:
         self._db_filepath = filepath
-        self._engine = create_engine(self._db_filepath, echo=False)
+        self._engine = create_engine(self._db_filepath, echo=False, connect_args={"check_same_thread": False})       
+        self._session_local = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
         
-        Base.metadata.create_all(self._engine)
+        
+        
+        self.create_tables_from_metadata()
+    
+    def create_tables_from_metadata(self):
+        Base.metadata.create_all(self._engine)  
+        
+    def get_session(self):
+        with Session(self._engine) as session:
+            yield session    
+            
+        # session_dep = Annotated[Session, Depends(self.get_session)]    
+            
+            
+            
+            
             
 
     # CREATE                        
@@ -125,7 +145,7 @@ class DBControl:
             return TaskSchema.model_validate(old_t)
     
     # DELETE    
-    def delete_type(self, id) -> TaskTypeSchema | None:
+    def delete_type(self, id) -> TaskTypeSchema:
         with Session(self._engine) as session:            
             row = session.get(TaskType, id)            
             if row is None:
@@ -135,7 +155,7 @@ class DBControl:
             session.commit()
             return deleted_row               
 
-    def delete_task(self, id) -> TaskSchema | None:
+    def delete_task(self, id) -> TaskSchema:
         with Session(self._engine) as session:            
             row = session.get(Task, id)            
             if row is None:
@@ -145,19 +165,21 @@ class DBControl:
             session.commit()
             return deleted_row 
     
-    def clear_all_types(self) -> None:
+    def clear_all_types(self) -> int:
         with Session(self._engine) as session:            
             res = session.execute(delete(TaskType))
             if res.rowcount == 0: # type:ignore
                 raise NotFoundException
             session.commit()
+            return res.rowcount # type:ignore
    
-    def clear_all_tasks(self) -> None:
+    def clear_all_tasks(self) -> int:
         with Session(self._engine) as session:
             res = session.execute(delete(Task))
             if res.rowcount == 0: # type:ignore
                 raise NotFoundException
             session.commit()
+            return res.rowcount # type:ignore
         
     
     

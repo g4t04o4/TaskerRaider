@@ -1,22 +1,16 @@
-from typing import Annotated, Any, List, Mapping, Optional
+from typing import Optional
 from datetime import datetime
 
-from annotated_doc import Doc
 from sqlalchemy import String, Date, ForeignKey
 from sqlalchemy import create_engine, select, delete
-from sqlalchemy.orm import DeclarativeBase, Mapped, sessionmaker
-from sqlalchemy.orm import mapped_column, relationship, Session
 
-from fastapi import Depends, HTTPException
+from sqlalchemy.orm import DeclarativeBase, Mapped
+from sqlalchemy.orm import mapped_column, relationship, Session
 
 from scripts.models import TaskSchema, TaskSchemaIn, TaskTypeSchema, TaskTypeSchemaIn
   
-class NotFoundException(HTTPException):
-    def __init__(self, 
-                 status_code: int = 404, 
-                 detail: Any = None, 
-                 headers: Mapping[str, str] | None = None) -> None:
-        super().__init__(status_code, detail, headers)
+class NotFoundException(Exception):
+    pass
     
 class Base(DeclarativeBase):
     pass
@@ -42,7 +36,7 @@ class TaskType(Base):
     name: Mapped[str] = mapped_column(String)
     desc: Mapped[Optional[str]]
     
-    tasks: Mapped[List["Task"]] = relationship(back_populates="tasktype", cascade="all, delete-orphan")
+    tasks: Mapped[list["Task"]] = relationship(back_populates="tasktype", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"TaskType(id={self.id!r}, name={self.name!r}, desc={self.desc!r})"

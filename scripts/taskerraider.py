@@ -1,36 +1,25 @@
-from typing import Annotated, Generator
+from typing import Annotated
 
-from contextlib import asynccontextmanager
+from scripts.dbcontrol import DBControl, NotFoundException
 
-from scripts.dbcontrol import DBControl, NotFoundException, Base
-
-from fastapi import FastAPI, APIRouter, Path, Response, status, HTTPException, Depends
+from fastapi import FastAPI, Path, Request, status
+from fastapi.responses import JSONResponse
 
 from scripts.models import TaskSchemaIn, TaskSchema, TaskTypeSchemaIn, TaskTypeSchema
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
-
-from pydantic import ValidationError
 
 """
 TODO:
 html/css ui
-tests
 universal server config
-return adequate status codes
-health check route
-internationalization (different languages)
-separate data structures for requests/decode_responses
 docker container for a full app
+middleware
+async/await
+separate error handler for a whole project
+session dependency database
+organize tests
 """
-# TODO: сделать нормальную асинхронщину
-# TODO: убрать ошибки из импортов
-# TODO: сделать нормальный return логов ошибок вместо return None (jsoncontent)
-# TODO: сделать exception handler для самых основных ошибок https://fastapi.tiangolo.com/tutorial/handling-errors/
-# TODO: update методы багуют
-# TODO: сделать shared cache in memory sqlite database для тестов api
-# TODO: переделать dbcontrol модуль под session dependency вариант
 """
 Маленькое FastAPI приложение для менеджмента задач
 
@@ -62,7 +51,21 @@ class TaskerRaider:
         self._register_routes()
         
                     
-    def _register_routes(self):   
+    def _register_routes(self):
+        
+        @self.app.exception_handler(IntegrityError)
+        async def integrity_exception_handler(request: Request, exc: IntegrityError):
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={"error": f"{exc.detail}"}
+            )
+            
+        @self.app.exception_handler(NotFoundException)
+        async def not_found_exception_handler(request: Request, exc: NotFoundException):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "Not found"}
+            )
         
         @self.app.get("/healthcheck", status_code=status.HTTP_200_OK)
         def healthcheck() -> str:
@@ -71,115 +74,55 @@ class TaskerRaider:
         
         # CREATE     
         @self.app.post("/type", status_code=status.HTTP_201_CREATED)    
-        def add_type(tasktype: TaskTypeSchemaIn | TaskTypeSchema) -> TaskTypeSchema | None:
-            try:
-                res = self.db_control.add_type(tasktype)
-                return res
-            except ValidationError as e:
-                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
-            except IntegrityError as e:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+        def add_type(tasktype: TaskTypeSchemaIn | TaskTypeSchema) -> TaskTypeSchema | None:            
+            return self.db_control.add_type(tasktype)
             
         @self.app.post("/task", status_code=status.HTTP_201_CREATED)    
-        def add_task(task: TaskSchemaIn | TaskSchema, response: Response) -> TaskSchema | None:
-            try:
-                res = self.db_control.add_task(task)
-                return res
-            except ValidationError as e:
-                response.status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
-            except IntegrityError as e:
-                response.status_code = status.HTTP_409_CONFLICT
+        def add_task(task: TaskSchemaIn | TaskSchema) -> TaskSchema | None:
+            return self.db_control.add_task(task)
         
         
         # READ   
         @self.app.get("/type/{type_id}", status_code=status.HTTP_200_OK)
-        def get_type(type_id: Annotated[int, Path(ge=0)], response: Response) -> TaskTypeSchema | None:
-            try:
-                res = self.db_control.get_type(type_id)
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
+        def get_type(type_id: Annotated[int, Path(ge=0)]) -> TaskTypeSchema | None:
+            return self.db_control.get_type(type_id)
             
         @self.app.get("/task/{task_id}", status_code=status.HTTP_200_OK)
-        def get_task(task_id: Annotated[int, Path(ge=0)], response: Response) -> TaskSchema | None:
-            try:
-                res = self.db_control.get_task(task_id)
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
+        def get_task(task_id: Annotated[int, Path(ge=0)]) -> TaskSchema | None:
+            return self.db_control.get_task(task_id)
             
         @self.app.get("/type_list", status_code=status.HTTP_200_OK)
-        def get_type_list(response: Response) -> list[TaskTypeSchema] | None:
-            try:
-                res = self.db_control.get_type_list()
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
+        def get_type_list() -> list[TaskTypeSchema] | None:
+            return self.db_control.get_type_list()
                        
         @self.app.get("/task_list", status_code=status.HTTP_200_OK)
-        def get_task_list(response: Response) -> list[TaskSchema] | None:
-            try:
-                res = self.db_control.get_task_list()
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
+        def get_task_list() -> list[TaskSchema] | None:
+            return self.db_control.get_task_list()
         
         
         # UPDATE    
         @self.app.put("/type", status_code=status.HTTP_200_OK)
-        def update_type(tasktype: TaskTypeSchema, response: Response) -> TaskTypeSchema | None:
-            try:
-                res = self.db_control.update_type(tasktype)
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
-            except ValidationError as e:
-                response.status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
-            except IntegrityError as e:
-                response.status_code = status.HTTP_409_CONFLICT
+        def update_type(tasktype: TaskTypeSchema) -> TaskTypeSchema | None:
+            return self.db_control.update_type(tasktype)
             
         @self.app.put("/task", status_code=status.HTTP_200_OK)
-        def update_task(task: TaskSchema, response: Response) -> TaskSchema | None:
-            try:
-                res = self.db_control.update_task(task)
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
-            except ValidationError as e:
-                response.status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
-            except IntegrityError as e:
-                response.status_code = status.HTTP_409_CONFLICT
+        def update_task(task: TaskSchema) -> TaskSchema | None:
+            return self.db_control.update_task(task)
         
         
         # DELETE    
         @self.app.delete("/type/{type_id}", status_code=status.HTTP_200_OK)
-        def delete_type(type_id: Annotated[int, Path(ge=0)], response: Response) -> TaskTypeSchema | None:
-            try:
-                res = self.db_control.delete_type(type_id)
-                return res 
-            except NotFoundException as e:
-                response.status_code = e.status_code
+        def delete_type(type_id: Annotated[int, Path(ge=0)]) -> TaskTypeSchema | None:
+            return self.db_control.delete_type(type_id)
             
         @self.app.delete("/task/{task_id}", status_code=status.HTTP_200_OK)
-        def delete_task(task_id: Annotated[int, Path(ge=0)], response: Response) -> TaskSchema | None:
-            try:
-                res: TaskSchema = self.db_control.delete_task(task_id)
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
+        def delete_task(task_id: Annotated[int, Path(ge=0)]) -> TaskSchema | None:
+            return self.db_control.delete_task(task_id)
             
         @self.app.delete("/type_list", status_code=status.HTTP_200_OK)
-        def clear_all_types(response: Response) -> int | None:
-            try:
-                res = self.db_control.clear_all_types()
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code
+        def clear_all_types() -> int | None:
+            return self.db_control.clear_all_types()
          
         @self.app.delete("/task_list", status_code=status.HTTP_200_OK)
-        def clear_all_tasks(response: Response) -> int | None:
-            try:
-                res = self.db_control.clear_all_tasks()
-                return res
-            except NotFoundException as e:
-                response.status_code = e.status_code    
+        def clear_all_tasks() -> int | None:            
+            return self.db_control.clear_all_tasks() 

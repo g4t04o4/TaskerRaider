@@ -57,7 +57,6 @@ def db():
     db.clear_all_types()  
 
 class TestTaskType:
-
     class TestCreateMethods:    
         def test_add_type_autoincrement_succeeds(self, db):
             type = TaskTypeSchemaIn(

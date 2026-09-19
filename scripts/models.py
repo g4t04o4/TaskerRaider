@@ -1,7 +1,7 @@
 from typing import Optional
-from datetime import date, datetime
+from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import BaseModel, ConfigDict
 
     
 class TaskSchemaIn(BaseModel):

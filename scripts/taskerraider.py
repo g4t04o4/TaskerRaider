@@ -91,11 +91,11 @@ class TaskerRaider:
         def get_task(task_id: Annotated[int, Path(ge=0)]) -> TaskSchema | None:
             return self.db_control.get_task(task_id)
             
-        @self.app.get("/type_list", status_code=status.HTTP_200_OK)
+        @self.app.get("/types", status_code=status.HTTP_200_OK)
         def get_type_list() -> list[TaskTypeSchema] | None:
             return self.db_control.get_type_list()
                        
-        @self.app.get("/task_list", status_code=status.HTTP_200_OK)
+        @self.app.get("/tasks", status_code=status.HTTP_200_OK)
         def get_task_list() -> list[TaskSchema] | None:
             return self.db_control.get_task_list()
         
@@ -119,10 +119,10 @@ class TaskerRaider:
         def delete_task(task_id: Annotated[int, Path(ge=0)]) -> TaskSchema | None:
             return self.db_control.delete_task(task_id)
             
-        @self.app.delete("/type_list", status_code=status.HTTP_200_OK)
+        @self.app.delete("/types", status_code=status.HTTP_200_OK)
         def clear_all_types() -> int | None:
             return self.db_control.clear_all_types()
          
-        @self.app.delete("/task_list", status_code=status.HTTP_200_OK)
+        @self.app.delete("/tasks", status_code=status.HTTP_200_OK)
         def clear_all_tasks() -> int | None:            
             return self.db_control.clear_all_tasks() 

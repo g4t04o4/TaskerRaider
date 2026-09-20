@@ -9,35 +9,6 @@ from scripts.models import TaskSchemaIn, TaskSchema, TaskTypeSchemaIn, TaskTypeS
 
 from sqlalchemy.exc import IntegrityError
 
-"""
-TODO:
-html/css ui
-universal server config
-docker container for a full app
-middleware
-async/await
-separate error handler for a whole project
-session dependency database
-organize tests
-"""
-"""
-Маленькое FastAPI приложение для менеджмента задач
-
-Функционал:
-    добавить задачу
-    изменить задачу
-        отметить задачу как выполненную
-    удалить задачу
-    показать все задачи отсортированно по времени/срочности/иному критерию
-    
-Дополнительно:
-    можно хранить тип задачи: работа/бытовое/досуг/саморазвитие и структурировать задачи по этим типам
-        причина создать вторую таблицу в бд и сделать связь между ними
-    
-    
-Задача содержит в себе название задачи, её краткое описание и дату/время, к которой она должна быть сделана (+тип задачи)
-"""
-
 
 class TaskerRaider:
     def __init__(self, db_filepath = "sqlite:///database.db") -> None:

@@ -1,0 +1,8 @@
+name: tasker_raider_project
+services:
+  trapp:
+    image: tasker_raider
+    build: .
+    ports:
+      - 3080:3080
+    container_name: cont_raider

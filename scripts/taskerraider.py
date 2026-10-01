@@ -1,9 +1,11 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from scripts.dbcontrol import DBControl, NotFoundException
 
-from fastapi import FastAPI, Path, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Path, Request, status, Form, Depends
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from scripts.models import TaskSchemaIn, TaskSchema, TaskTypeSchemaIn, TaskTypeSchema
 
@@ -19,10 +21,53 @@ class TaskerRaider:
         # Основное приложение FastAPI
         self.app = FastAPI(title="Tasker Raider")
         
+        # Фронт
+        self.app.mount("/static", StaticFiles(directory="static"), name="static")
+        self.templates = Jinja2Templates(directory="templates")
+        
+        # Руты
         self._register_routes()
         
                     
     def _register_routes(self):
+        
+        @self.app.get("/", include_in_schema=False)
+        @self.app.get("/home", include_in_schema=False)
+        async def home(request: Request):
+            return self.templates.TemplateResponse(request, "home.html")
+            
+        @self.app.get("/gettypes", include_in_schema=False)
+        async def gettypes(request: Request):
+            return self.templates.TemplateResponse(request, "listview.html", {"types": self.db_control.get_type_list()})
+        
+        @self.app.get("/gettasks", include_in_schema=False)
+        async def gettasks(request: Request):
+            return self.templates.TemplateResponse(request, "listview.html", {"tasks": self.db_control.get_task_list()})
+                
+        @self.app.get("/addtypeform", include_in_schema=False)
+        async def addtypeform(request: Request):
+            return self.templates.TemplateResponse(request, "addform.html")
+        
+        @self.app.post("/typesubmit", include_in_schema=False)
+        async def submittype(request: Request, 
+                             id: Annotated[int, Form()],                             
+                             form_data: Annotated[TaskTypeSchemaIn, Form()]):          
+            if id:
+                self.db_control.add_type(form_data)
+                                
+            # TODO: some kind of result is needed ?
+            # TODO: redirect
+            # TODO: make different pydantic models for different scenarios
+            # OR make form work and change "" to None on id field
+            # OR use weird field_validator/model_validator
+            # OR parse field one by one and assemple models inside of a method
+            # AND all those methods are absolute shit
+        
+        
+        
+        
+        
+        
         
         @self.app.exception_handler(IntegrityError)
         async def integrity_exception_handler(request: Request, exc: IntegrityError):
@@ -37,6 +82,9 @@ class TaskerRaider:
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"error": "Not found"}
             )
+        
+        
+        
         
         @self.app.get("/healthcheck", status_code=status.HTTP_200_OK)
         def healthcheck() -> str:

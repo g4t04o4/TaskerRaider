@@ -26,7 +26,10 @@
         весь список
 
 TODO: 
-    gui (jinja2 as a placeholder?) (react/vue.js?)
+    gui (jinja2/html/css) 
+    pretty gui (react/vue.js?)
+    actual web security
+    session storage
     universal server config
     docker container for a full app
     postgresql db

@@ -2,7 +2,12 @@ name: tasker_raider_project
 services:
   trapp:
     image: tasker_raider
+    pull_policy: never
     build: .
     ports:
       - 3080:3080
     container_name: cont_raider
+    environment:
+      DATABASE_URL: /trapp/db_data/database.db
+    volumes:
+      - ./sqlite_data:/trapp/db_data

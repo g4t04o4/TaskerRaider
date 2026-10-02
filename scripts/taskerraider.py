@@ -14,6 +14,9 @@ from sqlalchemy.exc import IntegrityError
 
 class TaskerRaider:
     def __init__(self, db_filepath = "sqlite:///database.db") -> None:
+        if not db_filepath.startswith("sqlite:///"):
+            db_filepath = "sqlite:///" + db_filepath
+        
         # База данных для хранения задач
         self.db_filepath = db_filepath
         self.db_control = DBControl(self.db_filepath)
@@ -46,7 +49,11 @@ class TaskerRaider:
                 
         @self.app.get("/addtypeform", include_in_schema=False)
         async def addtypeform(request: Request):
-            return self.templates.TemplateResponse(request, "addform.html")
+            return self.templates.TemplateResponse(request, "addtypeform.html")
+        
+        @self.app.get("/addtaskform", include_in_schema=False)
+        async def addtaskform(request: Request):
+            return self.templates.TemplateResponse(request, "addtaskform.html")
         
         @self.app.post("/typesubmit", include_in_schema=False)
         async def submittype(request: Request, 
@@ -54,6 +61,13 @@ class TaskerRaider:
                              form_data: Annotated[TaskTypeSchemaIn, Form()]):          
             if id:
                 self.db_control.add_type(form_data)
+                
+        @self.app.post("/tasksubmit", include_in_schema=False)
+        async def submittask(request: Request, 
+                            id: Annotated[int, Form()],                             
+                            form_data: Annotated[TaskSchemaIn, Form()]):          
+            if id:
+                self.db_control.add_task(form_data)
                                 
             # TODO: some kind of result is needed ?
             # TODO: redirect

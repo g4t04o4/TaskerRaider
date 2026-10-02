@@ -1,0 +1,7 @@
+services:
+  trapp:
+    image: dev_tasker_raider
+    container_name: dev_cont_raider
+    volumes:
+      - .:/trapp
+    command: fastapi run main.py --port 3080 --reload

@@ -27,12 +27,12 @@
 
 TODO: 
     gui (jinja2/html/css) 
-    pretty gui (react/vue.js?)
+    pretty gui (htmx/react/vue.js?)
     actual web security
     session storage
     universal server config
-    docker container for a full app
     postgresql db
     async/await (after postgres)
     separate error handler for a whole project (?)
     session dependency database access
+    docker .env for port and (?) service name/container name

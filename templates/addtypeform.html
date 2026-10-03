@@ -1,8 +1,10 @@
-{% extends "home.html" %}
+{% extends "base_template.html" %}
 
 {% block content %}
 
 <form action="{{ url_for('submittype') }}" method="POST">
+
+    <h2>TaskType:</h2>
 
     <div class="type-form">
         <label for="id">ID</label>

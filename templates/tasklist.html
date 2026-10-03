@@ -1,0 +1,19 @@
+{% extends "base_template.html" %}
+
+{% block content %}
+
+{% if tasks %}
+<h2>Tasks:</h2>
+{% for t in tasks %}
+<div class="task_view">
+    <h3>{{ t.name }} (id: {{ t.id }})</h3>
+    <p>{{ t.desc }}</p>
+    <p>{{t.deadline}}</p>
+    <p>{{t.tasktype_id}}</p>
+</div>
+{% endfor %}
+{% else %}
+<h2>Task list is empty.</h2>
+{% endif %}
+
+{% endblock content %}

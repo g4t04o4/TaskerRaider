@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    database_url: str = "./default.db"
+    database_url: str = "database.db"
     class Config:
         env_file: str = ".env"

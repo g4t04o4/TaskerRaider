@@ -16,13 +16,13 @@ class TaskSchemaIn(BaseModel):
 class TaskSchema(TaskSchemaIn):   
     id: int
     
-    # @model_validator(mode="before")
-    # @classmethod
-    # def validate_id(cls, t: Any):
-    #     if isinstance(t, dict):
-    #         if t["id"] == "":
-    #             del t["id"]
-    #     return t
+    @model_validator(mode="before")
+    @classmethod
+    def validate_id(cls, t: Any):
+        if isinstance(t, dict):
+            if t.get("id") == "":
+                del t["id"]
+        return t
         
     
 class TaskTypeSchemaIn(BaseModel):
@@ -34,10 +34,10 @@ class TaskTypeSchemaIn(BaseModel):
 class TaskTypeSchema(TaskTypeSchemaIn):   
     id: int
     
-    # @model_validator(mode="before")
-    # @classmethod
-    # def validate_id(cls, t: Any):
-    #     if isinstance(t, dict):
-    #         if t["id"] == "":
-    #             del t["id"]
-    #     return t
+    @model_validator(mode="before")
+    @classmethod
+    def validate_id(cls, t: Any):
+        if isinstance(t, dict):
+            if t.get("id") == "":
+                del t["id"]
+        return t

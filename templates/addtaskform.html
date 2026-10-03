@@ -1,31 +1,36 @@
-{% extends "home.html" %}
+{% extends "base_template.html" %}
 
 {% block content %}
 
 <form action="{{ url_for('submittask') }}" method="POST">
 
-    <div class="task-form">
-        <label for="id">ID</label>
-        <input type="number" id="id" name="id">
-    </div>
-    <div class="task-form">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required>
-    </div>
-    <div class="task-form">
-        <label for="desc">Description</label>
-        <input type="text" id="desc" name="desc">
-    </div>
-    <div class="task-form">
-        <label for="deadline">Deadline</label>
-        <input type="text" id="deadline" name="deadline">
-    </div>
-    <div class="task-form">
-        <label for="typeid">Type ID</label>
-        <input type="text" id="typeid" name="typeid">
-    </div>
+    <h2>Task:</h2>
 
-    <button type="submit">Send</button>
+    <div class="task-form">
+        <form action="/addtask" method="POST">
+            <div class="task-fields">
+                <label for="id">ID</label>
+                <input type="number" id="id" name="id">
+            </div>
+            <div class="task-fields">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="task-fields">
+                <label for="desc">Description</label>
+                <input type="text" id="desc" name="desc">
+            </div>
+            <div class="task-fields">
+                <label for="deadline">Deadline</label>
+                <input type="text" id="deadline" name="deadline" required>
+            </div>
+            <div class="task-fields">
+                <label for="tasktype_id">Type ID</label>
+                <input type="number" id="tasktype_id" name="tasktype_id" required>
+            </div>
+            <button type="submit">Send</button>
+        </form>
+    </div>
 </form>
 
 {% endblock content %}

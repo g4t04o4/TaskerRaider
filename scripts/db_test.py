@@ -105,8 +105,7 @@ class TestTaskType:
                 
         def test_get_type_list_from_empty_fails(self, db):
             db.clear_all_types()
-            with pytest.raises(NotFoundException):
-                db.get_type_list()        
+            assert db.get_type_list() == []       
      
     class TestUpdateMethods:    
         def test_update_type_succeeds(self, db):
@@ -202,8 +201,7 @@ class TestTask:
                 
         def test_get_task_list_from_empty_fails(self, db):
             db.clear_all_tasks()
-            with pytest.raises(NotFoundException):
-                db.get_task_list() 
+            assert db.get_task_list() == []
     
     class TestUpdateMethods:        
         def test_update_task_succeeds(self, db):
@@ -244,4 +242,8 @@ class TestTask:
             db.clear_all_tasks()
             with pytest.raises(NotFoundException):
                 db.clear_all_tasks()
+        
+        def test_delete_all_cascade_success(self, db):
+            db.clear_all_types()
+            assert db.get_task_list() == []
             

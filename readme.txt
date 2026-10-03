@@ -26,11 +26,18 @@
         весь список
 
 TODO: 
-    gui (jinja2/html/css) 
+    make a basic handler to duplicate less code
+    gui (jinja2/html/css)
+        update methods
+        delete task/type
+        prettify
+        date input
+        select tasktype from dropdown menu
     pretty gui (htmx/react/vue.js?)
     actual web security
     session storage
     universal server config
+    api routers
     postgresql db
     async/await (after postgres)
     separate error handler for a whole project (?)

@@ -1,0 +1,12 @@
+{% extends "base_template.html" %}
+
+{% block content %}
+
+<h2>You are about to {{ action_desc }}. Are you sure you've meant to do that?</h2>
+
+
+<form action="{{ url_for(method) }}" method="POST">
+    <button type="submit">Yes, I'm sure.</button>
+</form>
+
+{% endblock content %}

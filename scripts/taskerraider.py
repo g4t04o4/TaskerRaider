@@ -1,11 +1,15 @@
 from typing import Annotated, Optional
+from datetime import datetime
 
 from scripts.dbcontrol import DBControl, NotFoundException
 
 from fastapi import FastAPI, Path, Request, status, Form, Depends
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.exceptions import RequestValidationError, HTTPException
+
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from scripts.models import TaskSchemaIn, TaskSchema, TaskTypeSchemaIn, TaskTypeSchema
 
@@ -33,20 +37,32 @@ class TaskerRaider:
         
                     
     def _register_routes(self):
-        
         @self.app.get("/", include_in_schema=False)
         @self.app.get("/home", include_in_schema=False)
-        async def home(request: Request):
-            return self.templates.TemplateResponse(request, "home.html")
-            
+        async def redirect_home():
+            return RedirectResponse(url=self.app.url_path_for("gettasks"), 
+                                    status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+        
+        # READ    
         @self.app.get("/gettypes", include_in_schema=False)
         async def gettypes(request: Request):
-            return self.templates.TemplateResponse(request, "listview.html", {"types": self.db_control.get_type_list()})
+            return self.templates.TemplateResponse(request, 
+                                                   "typelist.html", 
+                                                   {
+                                                       "types": self.db_control.get_type_list()
+                                                    })
+            
         
         @self.app.get("/gettasks", include_in_schema=False)
         async def gettasks(request: Request):
-            return self.templates.TemplateResponse(request, "listview.html", {"tasks": self.db_control.get_task_list()})
-                
+            return self.templates.TemplateResponse(request, 
+                                                   "tasklist.html", 
+                                                   {
+                                                       "tasks": self.db_control.get_task_list()
+                                                    })
+        
+        
+        # CREATE        
         @self.app.get("/addtypeform", include_in_schema=False)
         async def addtypeform(request: Request):
             return self.templates.TemplateResponse(request, "addtypeform.html")
@@ -56,106 +72,174 @@ class TaskerRaider:
             return self.templates.TemplateResponse(request, "addtaskform.html")
         
         @self.app.post("/typesubmit", include_in_schema=False)
-        async def submittype(request: Request, 
-                             id: Annotated[int, Form()],                             
-                             form_data: Annotated[TaskTypeSchemaIn, Form()]):          
-            if id:
-                self.db_control.add_type(form_data)
+        async def submittype(request: Request,                            
+                             form_data: Annotated[TaskTypeSchema | TaskTypeSchemaIn, Form()]):          
+            self.db_control.add_type(form_data)
+            return RedirectResponse(url=self.app.url_path_for("gettypes"),                                     
+                                    status_code=status.HTTP_303_SEE_OTHER)
+            
                 
         @self.app.post("/tasksubmit", include_in_schema=False)
         async def submittask(request: Request, 
-                            id: Annotated[int, Form()],                             
-                            form_data: Annotated[TaskSchemaIn, Form()]):          
-            if id:
-                self.db_control.add_task(form_data)
-                                
-            # TODO: some kind of result is needed ?
-            # TODO: redirect
-            # TODO: make different pydantic models for different scenarios
-            # OR make form work and change "" to None on id field
-            # OR use weird field_validator/model_validator
-            # OR parse field one by one and assemple models inside of a method
-            # AND all those methods are absolute shit
+                            form_data: Annotated[TaskSchema | TaskSchemaIn, Form()]):          
+            self.db_control.add_task(form_data)
+            return RedirectResponse(url=self.app.url_path_for("gettasks"), 
+                                    status_code=status.HTTP_303_SEE_OTHER)
         
         
+        # UPDATE     
+        @self.app.put("/updatetypeform", include_in_schema=False)
+        async def updatetypeform(request: Request):
+            pass   
+             
+        @self.app.put("/updatetaskform", include_in_schema=False)
+        async def updatetaskform(request: Request):
+            pass  
+        
+             
+        # DELETE   
+        @self.app.get("/deletetypesconfirm", include_in_schema=False)
+        async def deletetypesconfirm(request: Request):
+            return self.templates.TemplateResponse(request, "confirmationform.html",
+                                                   {
+                                                       "action_desc": "delete all types",
+                                                       "method": "deletetypes"
+                                                   })
+        
+        @self.app.get("/deletetasksconfirm", include_in_schema=False)
+        async def deletetasksconfirm(request: Request):
+            return self.templates.TemplateResponse(request, "confirmationform.html",
+                                                   {
+                                                       "action_desc": "delete all tasks",
+                                                       "method": "deletetasks"
+                                                   })
+                  
+        @self.app.post("/deletetypes", include_in_schema=False)
+        async def deletetypes(request: Request):
+            self.db_control.clear_all_types()
+            return RedirectResponse(url=self.app.url_path_for("gettypes"),                                     
+                                    status_code=status.HTTP_303_SEE_OTHER)  
+                
+        @self.app.post("/deletetasks", include_in_schema=False)
+        async def deletetasks(request: Request):
+            self.db_control.clear_all_tasks()  
+            return RedirectResponse(url=self.app.url_path_for("gettasks"),                                     
+                                    status_code=status.HTTP_303_SEE_OTHER)     
         
         
-        
-        
-        
-        @self.app.exception_handler(IntegrityError)
-        async def integrity_exception_handler(request: Request, exc: IntegrityError):
-            return JSONResponse(
-                status_code=status.HTTP_409_CONFLICT,
-                content={"error": f"{exc.detail}"}
-            )
-            
-        @self.app.exception_handler(NotFoundException)
-        async def not_found_exception_handler(request: Request, exc: NotFoundException):
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content={"error": "Not found"}
-            )
-        
-        
-        
-        
-        @self.app.get("/healthcheck", status_code=status.HTTP_200_OK)
+        # API level
+        @self.app.get("/api/healthcheck", status_code=status.HTTP_200_OK)
         def healthcheck() -> str:
             return "operational"
         
         
         # CREATE     
-        @self.app.post("/type", status_code=status.HTTP_201_CREATED)    
+        @self.app.post("/api/type", status_code=status.HTTP_201_CREATED)    
         def add_type(tasktype: TaskTypeSchemaIn | TaskTypeSchema) -> TaskTypeSchema | None:            
             return self.db_control.add_type(tasktype)
             
-        @self.app.post("/task", status_code=status.HTTP_201_CREATED)    
+        @self.app.post("/api/task", status_code=status.HTTP_201_CREATED)    
         def add_task(task: TaskSchemaIn | TaskSchema) -> TaskSchema | None:
             return self.db_control.add_task(task)
         
         
         # READ   
-        @self.app.get("/type/{type_id}", status_code=status.HTTP_200_OK)
+        @self.app.get("/api/type/{type_id}", status_code=status.HTTP_200_OK)
         def get_type(type_id: Annotated[int, Path(ge=0)]) -> TaskTypeSchema | None:
             return self.db_control.get_type(type_id)
             
-        @self.app.get("/task/{task_id}", status_code=status.HTTP_200_OK)
+        @self.app.get("/api/task/{task_id}", status_code=status.HTTP_200_OK)
         def get_task(task_id: Annotated[int, Path(ge=0)]) -> TaskSchema | None:
             return self.db_control.get_task(task_id)
             
-        @self.app.get("/types", status_code=status.HTTP_200_OK)
+        @self.app.get("/api/types", status_code=status.HTTP_200_OK)
         def get_type_list() -> list[TaskTypeSchema] | None:
             return self.db_control.get_type_list()
                        
-        @self.app.get("/tasks", status_code=status.HTTP_200_OK)
+        @self.app.get("/api/tasks", status_code=status.HTTP_200_OK)
         def get_task_list() -> list[TaskSchema] | None:
             return self.db_control.get_task_list()
         
         
         # UPDATE    
-        @self.app.put("/type", status_code=status.HTTP_200_OK)
+        @self.app.put("/api/type", status_code=status.HTTP_200_OK)
         def update_type(tasktype: TaskTypeSchema) -> TaskTypeSchema | None:
             return self.db_control.update_type(tasktype)
             
-        @self.app.put("/task", status_code=status.HTTP_200_OK)
+        @self.app.put("/api/task", status_code=status.HTTP_200_OK)
         def update_task(task: TaskSchema) -> TaskSchema | None:
             return self.db_control.update_task(task)
         
         
         # DELETE    
-        @self.app.delete("/type/{type_id}", status_code=status.HTTP_200_OK)
+        @self.app.delete("/api/type/{type_id}", status_code=status.HTTP_200_OK)
         def delete_type(type_id: Annotated[int, Path(ge=0)]) -> TaskTypeSchema | None:
             return self.db_control.delete_type(type_id)
             
-        @self.app.delete("/task/{task_id}", status_code=status.HTTP_200_OK)
+        @self.app.delete("/api/task/{task_id}", status_code=status.HTTP_200_OK)
         def delete_task(task_id: Annotated[int, Path(ge=0)]) -> TaskSchema | None:
             return self.db_control.delete_task(task_id)
             
-        @self.app.delete("/types", status_code=status.HTTP_200_OK)
+        @self.app.delete("/api/types", status_code=status.HTTP_200_OK)
         def clear_all_types() -> int | None:
             return self.db_control.clear_all_types()
          
-        @self.app.delete("/tasks", status_code=status.HTTP_200_OK)
+        @self.app.delete("/api/tasks", status_code=status.HTTP_200_OK)
         def clear_all_tasks() -> int | None:            
             return self.db_control.clear_all_tasks() 
+        
+        
+        # Exception handlers
+        @self.app.exception_handler(IntegrityError)
+        async def integrity_exception_handler(request: Request, exc: IntegrityError):
+            if request.url.path.startswith("/api"):
+                return JSONResponse(
+                    status_code=status.HTTP_409_CONFLICT,
+                    content={"detail": "Value already exists."}
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    request,
+                    "error.html",
+                    {
+                        "error_code": status.HTTP_409_CONFLICT,
+                        "error_details": "Value already exists."
+                    },
+                    status_code=status.HTTP_409_CONFLICT
+                )
+            
+        @self.app.exception_handler(NotFoundException)
+        async def general_http_exception_handler(request: Request, exc: NotFoundException):
+            if request.url.path.startswith("/api"):
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content={"detail": "Found no such items."}
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    request,
+                    "error.html",
+                    {
+                        "error_code": status.HTTP_404_NOT_FOUND,
+                        "error_details": "Found no such items."
+                    },
+                    status_code=status.HTTP_404_NOT_FOUND
+                )
+                
+        @self.app.exception_handler(RequestValidationError)
+        async def validation_exception_handler(request: Request, exc: RequestValidationError):
+            if request.url.path.startswith("/api"):
+                return JSONResponse(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    content={"detail": exc.errors()}
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    request,
+                    "error.html",
+                    {
+                        "error_code": status.HTTP_422_UNPROCESSABLE_CONTENT,
+                        "error_details": "Invalid request. Check input values."
+                    },
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT
+               )

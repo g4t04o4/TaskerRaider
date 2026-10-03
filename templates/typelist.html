@@ -1,0 +1,18 @@
+{% extends "base_template.html" %}
+
+{% block content %}
+
+
+{% if types %}
+<h2>Types:</h2>
+{% for t in types %}
+<div class="type_view">
+    <h3>{{ t.name }} (id: {{ t.id }})</h3>
+    <p>{{ t.desc }}</p>
+</div>
+{% endfor %}
+{% else %}
+<h2>Type list is empty.</h2>
+{% endif %}
+
+{% endblock content %}

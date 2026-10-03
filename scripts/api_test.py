@@ -44,10 +44,10 @@ class TestAPI:
         
     # Tests
     def test_healthcheck(self):
-        res = self.get(200, "/healthcheck")
+        res = self.get(200, "/api/healthcheck")
         
     def test_add_type_autoincrement_success(self):
-        res = self.post(201, "/type", json={
+        res = self.post(201, "/api/type", json={
             "name": "learning",
             "desc": "practicing something to become better"
         })
@@ -58,7 +58,7 @@ class TestAPI:
         }
         
     def test_add_type_success(self):
-        res = self.post(201, "/type", json={
+        res = self.post(201, "/api/type", json={
             "id": 2,
             "name": "chores",
             "desc": "doing stuff to live another day"
@@ -70,7 +70,7 @@ class TestAPI:
         }
         
     def test_add_type_without_desc_success(self):
-        res = self.post(201, "/type", json={
+        res = self.post(201, "/api/type", json={
             "id": 3,
             "name": "work"
         })
@@ -81,35 +81,35 @@ class TestAPI:
         }
         
     def test_add_type_unique_rows_error(self):
-        res = self.post(409, "/type", json={
+        res = self.post(409, "/api/type", json={
             "id": 2,
             "name": "chores",
             "desc": "doing stuff to live another day"
         })
     
     def test_add_type_validation_error(self):
-        res = self.post(422, "/type", json={
+        res = self.post(422, "/api/type", json={
             "id": "seven",
             "name": "chores",
             "desc": "doing stuff to live another day"
         })
         
     def test_add_none_type_error(self):
-        res = self.post(422, "/type", json={
+        res = self.post(422, "/api/type", json={
             "id": None,
             "name": None,
             "desc": None
         })
         
     def test_add_type_id_only_error(self):
-        res = self.post(422, "/type", json={
+        res = self.post(422, "/api/type", json={
             "id": 15,
             "name": None,
             "desc": None
         })
         
     def test_add_task_instead_of_type_error(self):
-        res = self.post(422, "/type", json={
+        res = self.post(422, "/api/type", json={
             "id": 2,
             "name": "write some code",
             "desc": "python code specifically",
@@ -118,12 +118,12 @@ class TestAPI:
         })
         
     def test_add_empty_type_error(self):
-        res = self.post(422, "/type", json={})
+        res = self.post(422, "/api/type", json={})
           
         
        
     def test_add_task_autoincrement_success(self):
-        res = self.post(201, "/task", json={
+        res = self.post(201, "/api/task", json={
             "name": "petting a cat",
             "desc": "need to pet that kitty",
             "deadline": str(datetime(2002, 2, 2)),
@@ -138,7 +138,7 @@ class TestAPI:
         }
         
     def test_add_task_success(self):
-        res = self.post(201, "/task", json={
+        res = self.post(201, "/api/task", json={
             "id": 2,
             "name": "write some code",
             "desc": "python code specifically",
@@ -154,7 +154,7 @@ class TestAPI:
         }
         
     def test_add_task_without_desc_success(self):
-        res = self.post(201, "/task", json={
+        res = self.post(201, "/api/task", json={
             "name": "eat some food",
             "deadline": str(datetime(2003, 3, 3)),
             "tasktype_id": 2
@@ -168,7 +168,7 @@ class TestAPI:
         }
         
     def test_add_task_unique_rows_error(self):
-        res = self.post(409, "/task", json={
+        res = self.post(409, "/api/task", json={
             "id": 3,
             "name": "eat some food",
             "deadline": str(datetime(2003, 3, 3)),
@@ -176,7 +176,7 @@ class TestAPI:
         })
     
     def test_add_task_validation_error(self):
-        res = self.post(422, "/task", json={
+        res = self.post(422, "/api/task", json={
             "id": "three and a half",
             "name": "eat some food",
             "deadline": str(datetime(2003, 3, 3)),
@@ -184,7 +184,7 @@ class TestAPI:
         })
         
     def test_add_none_task_error(self):
-        res = self.post(422, "/task", json={
+        res = self.post(422, "/api/task", json={
             "id": None,
             "name": None,
             "desc": None,
@@ -193,7 +193,7 @@ class TestAPI:
         })
         
     def test_add_task_id_only_error(self):
-        res = self.post(422, "/task", json={
+        res = self.post(422, "/api/task", json={
             "id": 15,
             "name": None,
             "desc": None,
@@ -202,10 +202,10 @@ class TestAPI:
         })
         
     def test_add_empty_task_error(self):
-        res = self.post(422, "/task", json={})
+        res = self.post(422, "/api/task", json={})
         
     def test_add_type_instead_of_task(self):
-        res = self.post(422, "/task", json={
+        res = self.post(422, "/api/task", json={
             "id": 5,
             "name": "snores",
             "desc": "stuff i realy don't wanna do"
@@ -214,7 +214,7 @@ class TestAPI:
         
         
     def test_get_type_success(self):
-        res = self.get(200, "/type/1")
+        res = self.get(200, "/api/type/1")
         assert res.json() == {
             "id": 1,
             "name": "learning",
@@ -222,16 +222,16 @@ class TestAPI:
         }
         
     def test_get_nonexistent_type_error(self):
-        res = self.get(404, "/type/42")
+        res = self.get(404, "/api/type/42")
         
     def test_get_type_validation_error(self):
-        res = self.get(422, "/type/first")
+        res = self.get(422, "/api/type/first")
         
     def test_get_type_by_negative_id_error(self):
-        res = self.get(422, "/type/-5")
+        res = self.get(422, "/api/type/-5")
         
     def test_get_type_list_success(self):
-        res = self.get(200, "/types")
+        res = self.get(200, "/api/types")
         assert res.json() == [
             {"name":"learning",
              "desc":"practicing something to become better",
@@ -245,7 +245,7 @@ class TestAPI:
         ]     
         
     def test_get_task_success(self):
-        res = self.get(200, "/task/1")
+        res = self.get(200, "/api/task/1")
         assert res.json() == {
             "id": 1,
             "name": "petting a cat",
@@ -255,16 +255,16 @@ class TestAPI:
         }
         
     def test_get_nonexistent_task_error(self):
-        res = self.get(404, "/task/42")
+        res = self.get(404, "/api/task/42")
         
     def test_get_task_validation_error(self):
-        res = self.get(422, "/task/first")
+        res = self.get(422, "/api/task/first")
             
     def test_get_task_by_negative_id_error(self):
-        res = self.get(422, "/task/-5")
+        res = self.get(422, "/api/task/-5")
         
     def test_get_task_list_success(self):
-        res = self.get(200, "/tasks")
+        res = self.get(200, "/api/tasks")
         assert res.json() == [
             {"name":"petting a cat",
              "deadline":"2002-02-02T00:00:00",
@@ -286,7 +286,7 @@ class TestAPI:
         
     
     def test_update_type_success(self):
-        res = self.put(200, "/type", json={
+        res = self.put(200, "/api/type", json={
             "id": 1,
             "name": "pleasure",
             "desc": "relaxing behaviour, something that makes you chill"
@@ -298,7 +298,7 @@ class TestAPI:
         }
         
     def test_update_type_another_success(self):
-        res = self.put(200, "/type", json={
+        res = self.put(200, "/api/type", json={
             "id": 2,
             "name": "home chores",
             "desc": "stuff that needs to be done at home"
@@ -310,7 +310,7 @@ class TestAPI:
         }
     
     def test_update_type_without_desc_success(self):
-        res = self.put(200, "/type", json={
+        res = self.put(200, "/api/type", json={
             "id": 1,
             "name": "pleasure"
         })
@@ -321,34 +321,34 @@ class TestAPI:
         }
         
     def test_update_nonexistent_type_error(self):
-        res = self.put(404, "/type", json={
+        res = self.put(404, "/api/type", json={
             "id": 15,
             "name": "gork",
             "desc": "mork"
         })
         
     def test_update_none_type_error(self):
-        res = self.put(422, "/type", json={
+        res = self.put(422, "/api/type", json={
             "id": None,
             "name": None,
             "desc": None
         })
         
     def test_update_empty_type_error(self):
-        res = self.put(422, "/type", json={})
+        res = self.put(422, "/api/type", json={})
         
     def test_update_type_id_only_error(self):
-        res = self.put(422, "/type", json={"id": 1})
+        res = self.put(422, "/api/type", json={"id": 1})
         
     def test_update_type_validation_error(self):
-        res = self.put(422, "/type", json={
+        res = self.put(422, "/api/type", json={
             "id": "three",
             "name": "three",
             "desc": "three"
         })
          
     def test_update_task_success(self):
-        res = self.put(200, "/task", json={
+        res = self.put(200, "/api/task", json={
             "id": 1,
             "name": "petting a cat",
             "desc": "need to pet that kitty",
@@ -364,7 +364,7 @@ class TestAPI:
         }
         
     def test_update_task_change_deadline_success(self):
-        res = self.put(200, "/task", json={
+        res = self.put(200, "/api/task", json={
             "id": 3,
             "name": "eat some food",
             "desc": "food needs to be eaten",
@@ -380,7 +380,7 @@ class TestAPI:
         }
         
     def test_update_task_change_tasktype_success(self):
-        res = self.put(200, "/task", json={
+        res = self.put(200, "/api/task", json={
             "id": 3,
             "name": "eat some food",
             "desc": "food needs to be eaten",
@@ -396,7 +396,7 @@ class TestAPI:
         }
     
     def test_update_task_without_desc_success(self):
-        res = self.put(200, "/task", json={
+        res = self.put(200, "/api/task", json={
             "id": 1,
             "name": "petting a cat",
             "deadline": "2002-02-02T00:00:00",
@@ -411,7 +411,7 @@ class TestAPI:
         }
         
     def test_update_nonexistent_task_error(self):
-        res = self.put(404, "/task", json={
+        res = self.put(404, "/api/task", json={
             "id": 55,
             "name": "petting a cat",
             "desc": "need to pet that kitty",
@@ -420,7 +420,7 @@ class TestAPI:
         })
         
     def test_update_none_task_error(self):
-        res = self.put(422, "/task", json={
+        res = self.put(422, "/api/task", json={
             "id": None,
             "name": None,
             "desc": None,
@@ -429,13 +429,13 @@ class TestAPI:
         })
         
     def test_update_empty_task_error(self):
-        res = self.put(422, "/task", json={})
+        res = self.put(422, "/api/task", json={})
         
     def test_update_task_id_only_error(self):
-        res = self.put(422, "/task", json={"id": 1})
+        res = self.put(422, "/api/task", json={"id": 1})
         
     def test_update_task_validation_error(self):
-        res = self.put(422, "/task", json={
+        res = self.put(422, "/api/task", json={
             "id": "one",
             "name": "petting a cat",
             "desc": "need to pet that kitty",
@@ -446,37 +446,39 @@ class TestAPI:
     
     
     def test_delete_type_success(self):
-        res = self.delete(200, "/type/1")
+        res = self.delete(200, "/api/type/1")
     
     def test_delete_nonexistent_type_error(self):
-        res = self.delete(404, "/type/42")
+        res = self.delete(404, "/api/type/42")
         
     def test_delete_type_validation_error(self):
-        res = self.delete(422, "/type/three")
+        res = self.delete(422, "/api/type/three")
         
     def test_clear_all_types_success(self):
-        res = self.delete(200, "/types")
+        res = self.delete(200, "/api/types")
     
     def test_clear_hollow_types_error(self):
-        res = self.delete(404, "/types")
+        res = self.delete(404, "/api/types")
        
     def test_get_type_list_from_empty_error(self):
-        res = self.get(404, "/types")
+        res = self.get(200, "/api/types")
+        assert res.json() == []
     
     def test_delete_task_success(self):
-        res = self.delete(200, "/task/1")
+        res = self.delete(200, "/api/task/1")
     
     def test_delete_nonexistent_task_error(self):
-        res = self.delete(404, "/task/42")
+        res = self.delete(404, "/api/task/42")
         
     def test_delete_task_validation_error(self):
-        res = self.delete(422, "/task/three")
+        res = self.delete(422, "/api/task/three")
         
     def test_clear_all_task_success(self):
-        res = self.delete(200, "/tasks")
+        res = self.delete(200, "/api/tasks")
     
     def test_clear_hollow_tasks_error(self):
-        res = self.delete(404, "/tasks")
+        res = self.delete(404, "/api/tasks")
         
     def test_get_task_list_from_empty_error(self):
-        res = self.get(404, "/tasks")
+        res = self.get(200, "/api/tasks")
+        assert res.json() == []

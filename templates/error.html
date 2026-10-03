@@ -1,0 +1,12 @@
+{% extends "base_template.html" %}
+
+{% block content %}
+
+<article class="error_response">
+    <h1>
+        <a class="error_code">Error: {{ error_code }}</a>
+    </h1>
+    <p class="error_details">{{ error_details }}</p>
+</article>
+
+{% endblock content %}

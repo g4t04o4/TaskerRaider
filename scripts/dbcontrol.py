@@ -1,8 +1,8 @@
 from typing import Optional
 from datetime import datetime
 
-from sqlalchemy import String, Date, ForeignKey
-from sqlalchemy import create_engine, select, delete
+from sqlalchemy import String, Date, ForeignKey, event
+from sqlalchemy import create_engine, select, delete, text
 
 from sqlalchemy.orm import DeclarativeBase, Mapped
 from sqlalchemy.orm import mapped_column, relationship, Session
@@ -23,7 +23,7 @@ class Task(Base):
     deadline: Mapped[datetime] = mapped_column(Date)
     desc: Mapped[Optional[str]]
     
-    tasktype_id: Mapped[int] = mapped_column(ForeignKey('tasktype.id'))
+    tasktype_id: Mapped[int] = mapped_column(ForeignKey('tasktype.id', ondelete="CASCADE"))
     tasktype: Mapped["TaskType"] = relationship(back_populates="tasks")
     
     def __repr__(self) -> str:
@@ -36,7 +36,7 @@ class TaskType(Base):
     name: Mapped[str] = mapped_column(String)
     desc: Mapped[Optional[str]]
     
-    tasks: Mapped[list["Task"]] = relationship(back_populates="tasktype", cascade="all, delete-orphan")
+    tasks: Mapped[list["Task"]] = relationship(back_populates="tasktype", cascade="all, delete-orphan", passive_deletes=True)
     
     def __repr__(self) -> str:
         return f"TaskType(id={self.id!r}, name={self.name!r}, desc={self.desc!r})"
@@ -44,9 +44,14 @@ class TaskType(Base):
 class DBControl:
     def __init__(self, filepath: str) -> None:
         self._db_filepath = filepath
-        self._engine = create_engine(self._db_filepath, echo=False, connect_args={"check_same_thread": False}) 
+        self._engine = create_engine(self._db_filepath, 
+                                     echo=False, 
+                                     connect_args={"check_same_thread": False}) 
         
         Base.metadata.create_all(self._engine)
+        
+        with self._engine.connect() as conn:        
+            conn.execute(text('PRAGMA foreign_keys=ON;'))
           
 
     # CREATE                        
@@ -87,8 +92,6 @@ class DBControl:
             lst = []            
             for t in session.scalars(select(TaskType)).all():
                 lst.append(TaskTypeSchema.model_validate(t))
-            if not lst:
-                raise NotFoundException
             return lst
         
     def get_task_list(self) -> list[TaskSchema]:
@@ -96,8 +99,6 @@ class DBControl:
             lst = []            
             for t in session.scalars(select(Task)).all():
                 lst.append(TaskSchema.model_validate(t))
-            if not lst:
-                raise NotFoundException
             return lst
     
     
